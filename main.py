@@ -9,6 +9,8 @@ def on_on_overlap(sprite, otherSprite):
 sprites.on_overlap(SpriteKind.player, SpriteKind.Snake, on_on_overlap)
 
 def on_up_pressed():
+    if len(spellCombo) > 0:
+        spellCombo.append("U")
     myPlayer.set_image(img("""
         . . . . . . f f f f . . . . . . 
                 . . . . f f e e e e f f . . . . 
@@ -29,7 +31,25 @@ def on_up_pressed():
     """))
 controller.up.on_event(ControllerButtonEvent.PRESSED, on_up_pressed)
 
+def on_b_pressed():
+    global spellCombo
+    if len(spellCombo) > 0:
+        if not (castSpell(spellCombo.join(""))):
+            music.play_melody("D C - - - - - - ", 600)
+        spellCombo = []
+    else:
+        myPlayer.set_velocity(0, 0)
+        spellCombo = ["B"]
+controller.B.on_event(ControllerButtonEvent.PRESSED, on_b_pressed)
+
+def on_a_pressed():
+    if len(spellCombo) > 0:
+        spellCombo.append("A")
+controller.A.on_event(ControllerButtonEvent.PRESSED, on_a_pressed)
+
 def on_left_pressed():
+    if len(spellCombo) > 0:
+        spellCombo.append("L")
     myPlayer.set_image(img("""
         . . . . . f f f f f f . . . . . 
                 . . . . f 2 f e e e e f f . . . 
@@ -51,6 +71,8 @@ def on_left_pressed():
 controller.left.on_event(ControllerButtonEvent.PRESSED, on_left_pressed)
 
 def on_right_pressed():
+    if len(spellCombo) > 0:
+        spellCombo.append("R")
     myPlayer.set_image(img("""
         . . . . . . . . . . . . . . . . 
                 . . . . . f f f f f f . . . . . 
@@ -96,7 +118,14 @@ def spawnSnake(x: number, y: number):
     newSnake.set_velocity(50, 0)
     baddies.unshift(newSnake)
 
+def on_on_overlap2(sprite, otherSprite):
+    otherSprite.destroy(effects.disintegrate, 100)
+    sprite.destroy()
+sprites.on_overlap(SpriteKind.projectile, SpriteKind.Snake, on_on_overlap2)
+
 def on_down_pressed():
+    if len(spellCombo) > 0:
+        spellCombo.append("D")
     myPlayer.set_image(img("""
         . . . . . . f f f f . . . . . . 
                 . . . . f f f 2 2 f f f . . . . 
@@ -117,11 +146,92 @@ def on_down_pressed():
     """))
 controller.down.on_event(ControllerButtonEvent.PRESSED, on_down_pressed)
 
+def castSpell(combo: str):
+    if manaBar.value >= 20 and combo == "BAAA" and info.life() < maxHealth:
+        info.change_life_by(1)
+        music.magic_wand.play()
+        manaBar.value += -20
+        return True
+    if manaBar.value >= 3 and (combo == "BR" or combo == "BU" or combo == "BL" or combo == "BD"):
+        sprites.create_projectile_from_sprite(missileSprite(combo[1]),
+            myPlayer,
+            missileDx(combo[1]) * 200,
+            missileDy(combo[1]) * 200)
+        manaBar.value += -3
+        return True
+    return False
 snakes: List[Sprite] = []
 newSnake: Sprite = None
 baddies: List[Sprite] = []
+maxHealth = 0
+manaBar: StatusBarSprite = None
 myPlayer: Sprite = None
-info.set_life(3)
+spellCombo: List[str] = []
+def missileDx(direction: any):
+    if direction == "R":
+        return 1
+    if direction == "L":
+        return -1
+    return 0
+def missileDy(direction: any):
+    if direction == "U":
+        return -1
+    if direction == "D":
+        return 1
+    return 0
+def missileSprite(direction: any):
+    if direction == "R":
+        return img("""
+            . . . . . . a .
+                                                . . . . 6 9 8 a
+                                                6 . 6 9 9 8 8 a
+                                                . . . . 6 9 8 a
+                                                . . . . . . a .
+        """)
+    if direction == "L":
+        return img("""
+            . a . . . . . .
+                                                                                                                    a 8 9 6 . . . .
+                                                                                                                    a 8 8 9 9 6 . 6
+                                                                                                                    a 8 9 6 . . . .
+                                                                                                                    . a . . . . . .
+        """)
+    if direction == "U":
+        return img("""
+            . a a a .
+                                                    a 8 8 8 a
+                                                    . 9 8 9 .
+                                                    . 6 9 6 .
+                                                    . . 9 . .
+                                                    . . 6 . .
+                                                    . . . . .
+                                                    . . 6 . .
+        """)
+    if direction == "D":
+        return img("""
+            . . 6 . .
+                                                                                                                    . . . . .
+                                                                                                                    . . 6 . .
+                                                                                                                    . . 9 . .
+                                                                                                                    . 6 9 6 .
+                                                                                                                    . 9 8 9 .
+                                                                                                                    a 8 8 8 a
+                                                                                                                    . a a a .
+        """)
+    return img("""
+        2 . . . 2
+                                . 2 . 2 .
+                                . . 2 . .
+                                . 2 . 2 .
+                                2 . . . 2
+    """)
+manaBar = statusbars.create(30, 6, StatusBarKind.magic)
+manaBar.set_position(15, 15)
+manaBar.value = 20
+manaBar.max = 20
+manaBar.set_color(10, 15)
+maxHealth = 3
+info.set_life(maxHealth)
 myPlayer = sprites.create(img("""
         . . . . . . f f f f . . . . . . 
             . . . . f f f 2 2 f f f . . . . 
@@ -141,7 +251,7 @@ myPlayer = sprites.create(img("""
             . . . . . f f . . f f . . . . .
     """),
     SpriteKind.player)
-controller.move_sprite(myPlayer)
+controller.move_sprite(myPlayer, 100, 100)
 scene.camera_follow_sprite(myPlayer)
 scene.set_background_color(7)
 tiles.set_tilemap(tiles.create_tilemap(hex("""
