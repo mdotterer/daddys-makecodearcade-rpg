@@ -1,6 +1,10 @@
 namespace SpriteKind {
     export const Snake = SpriteKind.create()
 }
+namespace ConnectionKind {
+    export const EW0 = ConnectionKind.create()
+    export const EW1 = ConnectionKind.create()
+}
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Snake, function (sprite, otherSprite) {
     music.pewPew.play()
     info.changeLifeBy(-1)
@@ -29,6 +33,34 @@ controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
         . . . . . f f . . f f . . . . . 
         `)
 })
+scene.onHitWall(SpriteKind.Player, function (sprite, location) {
+    if (sprite.tileKindAt(TileDirection.Right, assets.tile`transparency16`)) {
+        if (sceneX % 2 == 0) {
+            tiles.loadConnectedMap(ConnectionKind.EW1)
+        } else {
+            tiles.loadConnectedMap(ConnectionKind.EW0)
+        }
+        sprite.x = 0
+    } else {
+        if (sprite.tileKindAt(TileDirection.Left, assets.tile`transparency16`)) {
+            if (sceneX % 2 == 0) {
+                tiles.loadConnectedMap(ConnectionKind.EW0)
+            } else {
+                tiles.loadConnectedMap(ConnectionKind.EW1)
+            }
+            sprite.x = 16 * tiles.tilemapColumns()
+        }
+    }
+})
+function missileDy (direction: string) {
+    if (direction == "U") {
+        return -1
+    }
+    if (direction == "D") {
+        return 1
+    }
+    return 0
+}
 controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
     if (spellCombo.length > 0) {
         if (!(castSpell(spellCombo.join("")))) {
@@ -44,6 +76,66 @@ controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
         spellCombo = ["B"]
     }
 })
+function missileDx (direction: string) {
+    if (direction == "R") {
+        return 1
+    }
+    if (direction == "L") {
+        return -1
+    }
+    return 0
+}
+function missileSprite (direction: string) {
+    if (direction == "R") {
+        return img`
+            . . . . . . a . 
+            . . . . 6 9 8 a 
+            6 . 6 9 9 8 8 a 
+            . . . . 6 9 8 a 
+            . . . . . . a . 
+            `
+    }
+    if (direction == "L") {
+        return img`
+            . a . . . . . . 
+            a 8 9 6 . . . . 
+            a 8 8 9 9 6 . 6 
+            a 8 9 6 . . . . 
+            . a . . . . . . 
+            `
+    }
+    if (direction == "U") {
+        return img`
+            . a a a . 
+            a 8 8 8 a 
+            . 9 8 9 . 
+            . 6 9 6 . 
+            . . 9 . . 
+            . . 6 . . 
+            . . . . . 
+            . . 6 . . 
+            `
+    }
+    if (direction == "D") {
+        return img`
+            . . 6 . . 
+            . . . . . 
+            . . 6 . . 
+            . . 9 . . 
+            . 6 9 6 . 
+            . 9 8 9 . 
+            a 8 8 8 a 
+            . a a a . 
+            `
+    }
+    return img`
+        2 . . . 2 
+        . 2 . 2 . 
+        . . 2 . . 
+        . 2 . 2 . 
+        2 . . . 2 
+        `
+}
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (spellCombo.length > 0) {
         spellCombo.push("A")
@@ -71,6 +163,22 @@ controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
         . . . . . f f f f f f . . . . . 
         . . . . . . . f f f . . . . . . 
         `)
+})
+tiles.onMapLoaded(function (tilemap2) {
+    if (tilemap2 == scene01) {
+        sceneX = 0
+        scene.setBackgroundColor(7)
+        spawnSnake(100, 100)
+        spawnSnake(150, 200)
+    }
+    if (tilemap2 == scene02) {
+        sceneX = 1
+        scene.setBackgroundColor(7)
+    }
+    if (tilemap2 == scene03) {
+        sceneX = -1
+        scene.setBackgroundColor(7)
+    }
 })
 controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
     if (spellCombo.length > 0) {
@@ -116,7 +224,6 @@ function spawnSnake (x: number, y: number) {
         `, SpriteKind.Snake)
     newSnake.setPosition(x, y)
     newSnake.setVelocity(50, 0)
-    baddies.unshift(newSnake)
 }
 sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Snake, function (sprite, otherSprite) {
     otherSprite.destroy(effects.disintegrate, 100)
@@ -159,90 +266,19 @@ manaBar.value += -3
     }
     return false
 }
+tiles.onMapUnloaded(function (tilemap2) {
+    tiles.destroySpritesOfKind(SpriteKind.Snake)
+})
 let snakes: Sprite[] = []
 let newSnake: Sprite = null
-let baddies: Sprite[] = []
+let sceneX = 0
 let maxHealth = 0
 let manaBar: StatusBarSprite = null
-let spellCombo : string[] = []
+let scene03: tiles.WorldMap = null
+let scene02: tiles.WorldMap = null
+let scene01: tiles.WorldMap = null
 let myPlayer : Sprite = null
-function missileDx(direction: any): number {
-    if (direction == "R") {
-        return 1
-    }
-    
-    if (direction == "L") {
-        return -1
-    }
-    
-    return 0
-}
-function missileDy(direction: any): number {
-    if (direction == "U") {
-        return -1
-    }
-    
-    if (direction == "D") {
-        return 1
-    }
-    
-    return 0
-}
-function missileSprite(direction: any): Image {
-    if (direction == "R") {
-        return img`
-            . . . . . . a .
-                                                . . . . 6 9 8 a
-                                                6 . 6 9 9 8 8 a
-                                                . . . . 6 9 8 a
-                                                . . . . . . a .
-        `
-    }
-    
-    if (direction == "L") {
-        return img`
-            . a . . . . . .
-                                                                                                                    a 8 9 6 . . . .
-                                                                                                                    a 8 8 9 9 6 . 6
-                                                                                                                    a 8 9 6 . . . .
-                                                                                                                    . a . . . . . .
-        `
-    }
-    
-    if (direction == "U") {
-        return img`
-            . a a a .
-                                                    a 8 8 8 a
-                                                    . 9 8 9 .
-                                                    . 6 9 6 .
-                                                    . . 9 . .
-                                                    . . 6 . .
-                                                    . . . . .
-                                                    . . 6 . .
-        `
-    }
-    
-    if (direction == "D") {
-        return img`
-            . . 6 . .
-                                                                                                                    . . . . .
-                                                                                                                    . . 6 . .
-                                                                                                                    . . 9 . .
-                                                                                                                    . 6 9 6 .
-                                                                                                                    . 9 8 9 .
-                                                                                                                    a 8 8 8 a
-                                                                                                                    . a a a .
-        `
-    }
-    
-    return img`
-        2 . . . 2
-                                . 2 . 2 .
-                                . . 2 . .
-                                . 2 . 2 .
-                                2 . . . 2
-    `
-}
+let spellCombo : string[] = []
 manaBar = statusbars.create(30, 6, StatusBarKind.Magic)
 manaBar.setPosition(15, 15)
 manaBar.value = 20
@@ -270,28 +306,12 @@ myPlayer = sprites.create(img`
     `, SpriteKind.Player)
 controller.moveSprite(myPlayer, 100, 100)
 scene.cameraFollowSprite(myPlayer)
-scene.setBackgroundColor(7)
-tiles.setTilemap(tiles.createTilemap(hex`1000100001010101010101010101010101010101010302030203020302030203020302010102030203020302030203020202030101030203020302030203020302030201010203020302020203020302030302010103020302030203020202030203020101020302030203020302030202020301010302030203020302030203020302010102030203020302030203020302030101030203020302030202020302030201010203020302030203020302030203010103020302030203020302030203020101020302030203020302030203020301010302030203020302030203020302010102030203020302030203020302030101010101010101010101010101010101`, img`
-    2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 . . . . . . . . . . . . . . 2 
-    2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
-    `, [myTiles.transparency16,sprites.builtin.forestTiles0,sprites.castle.tileGrass1,sprites.castle.tileGrass3], TileScale.Sixteen))
-baddies = []
-spawnSnake(100, 100)
-spawnSnake(150, 200)
+scene01 = tiles.createMap(tilemap`level3`)
+scene02 = tiles.createMap(tilemap`level4`)
+scene03 = tiles.createMap(tilemap`level2`)
+tiles.connectMapById(scene01, scene02, ConnectionKind.EW1)
+tiles.connectMapById(scene01, scene03, ConnectionKind.EW0)
+tiles.loadMap(scene01)
 game.onUpdate(function () {
     let direction: number;
 snakes = sprites.allOfKind(SpriteKind.Snake)

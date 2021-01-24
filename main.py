@@ -31,16 +31,79 @@ def on_up_pressed():
     """))
 controller.up.on_event(ControllerButtonEvent.PRESSED, on_up_pressed)
 
+def missileDy(direction: str):
+    if direction == "U":
+        return -1
+    if direction == "D":
+        return 1
+    return 0
+
 def on_b_pressed():
     global spellCombo
     if len(spellCombo) > 0:
         if not (castSpell(spellCombo.join(""))):
+            if manaBar.value > 0:
+                manaBar.value += -1
+                myPlayer.start_effect(effects.rings, 500)
             music.play_melody("D C - - - - - - ", 600)
         spellCombo = []
     else:
         myPlayer.set_velocity(0, 0)
         spellCombo = ["B"]
 controller.B.on_event(ControllerButtonEvent.PRESSED, on_b_pressed)
+
+def missileDx(direction: str):
+    if direction == "R":
+        return 1
+    if direction == "L":
+        return -1
+    return 0
+def missileSprite(direction: str):
+    if direction == "R":
+        return img("""
+            . . . . . . a . 
+                        . . . . 6 9 8 a 
+                        6 . 6 9 9 8 8 a 
+                        . . . . 6 9 8 a 
+                        . . . . . . a .
+        """)
+    if direction == "L":
+        return img("""
+            . a . . . . . . 
+                        a 8 9 6 . . . . 
+                        a 8 8 9 9 6 . 6 
+                        a 8 9 6 . . . . 
+                        . a . . . . . .
+        """)
+    if direction == "U":
+        return img("""
+            . a a a . 
+                        a 8 8 8 a 
+                        . 9 8 9 . 
+                        . 6 9 6 . 
+                        . . 9 . . 
+                        . . 6 . . 
+                        . . . . . 
+                        . . 6 . .
+        """)
+    if direction == "D":
+        return img("""
+            . . 6 . . 
+                        . . . . . 
+                        . . 6 . . 
+                        . . 9 . . 
+                        . 6 9 6 . 
+                        . 9 8 9 . 
+                        a 8 8 8 a 
+                        . a a a .
+        """)
+    return img("""
+        2 . . . 2 
+                . 2 . 2 . 
+                . . 2 . . 
+                . 2 . 2 . 
+                2 . . . 2
+    """)
 
 def on_a_pressed():
     if len(spellCombo) > 0:
@@ -167,64 +230,6 @@ maxHealth = 0
 manaBar: StatusBarSprite = None
 myPlayer: Sprite = None
 spellCombo: List[str] = []
-def missileDx(direction: any):
-    if direction == "R":
-        return 1
-    if direction == "L":
-        return -1
-    return 0
-def missileDy(direction: any):
-    if direction == "U":
-        return -1
-    if direction == "D":
-        return 1
-    return 0
-def missileSprite(direction: any):
-    if direction == "R":
-        return img("""
-            . . . . . . a .
-                                                . . . . 6 9 8 a
-                                                6 . 6 9 9 8 8 a
-                                                . . . . 6 9 8 a
-                                                . . . . . . a .
-        """)
-    if direction == "L":
-        return img("""
-            . a . . . . . .
-                                                                                                                    a 8 9 6 . . . .
-                                                                                                                    a 8 8 9 9 6 . 6
-                                                                                                                    a 8 9 6 . . . .
-                                                                                                                    . a . . . . . .
-        """)
-    if direction == "U":
-        return img("""
-            . a a a .
-                                                    a 8 8 8 a
-                                                    . 9 8 9 .
-                                                    . 6 9 6 .
-                                                    . . 9 . .
-                                                    . . 6 . .
-                                                    . . . . .
-                                                    . . 6 . .
-        """)
-    if direction == "D":
-        return img("""
-            . . 6 . .
-                                                                                                                    . . . . .
-                                                                                                                    . . 6 . .
-                                                                                                                    . . 9 . .
-                                                                                                                    . 6 9 6 .
-                                                                                                                    . 9 8 9 .
-                                                                                                                    a 8 8 8 a
-                                                                                                                    . a a a .
-        """)
-    return img("""
-        2 . . . 2
-                                . 2 . 2 .
-                                . . 2 . .
-                                . 2 . 2 .
-                                2 . . . 2
-    """)
 manaBar = statusbars.create(30, 6, StatusBarKind.magic)
 manaBar.set_position(15, 15)
 manaBar.value = 20
