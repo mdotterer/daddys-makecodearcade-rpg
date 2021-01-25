@@ -5,7 +5,9 @@
         "device": "*",
         "animation": "*",
         "pxt-status-bar": "github:jwunderl/pxt-status-bar#v0.4.0",
-        "tilemaps": "github:microsoft/pxt-tilemaps#v1.10.0"
+        "tilemaps": "github:microsoft/pxt-tilemaps#v1.10.0",
+        "settings-blocks": "github:microsoft/pxt-settings-blocks#v1.0.0",
+        "arcade-sprite-data": "github:microsoft/arcade-sprite-data#v0.1.0"
     },
     "files": [
         "main.blocks",

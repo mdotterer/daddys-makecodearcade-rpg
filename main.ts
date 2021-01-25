@@ -34,21 +34,21 @@ controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
         `)
 })
 scene.onHitWall(SpriteKind.Player, function (sprite, location) {
-    if (sprite.tileKindAt(TileDirection.Right, assets.tile`transparency16`)) {
+    if (controller.right.isPressed() && tiles.tileIs(tiles.locationInDirection(tiles.locationOfSprite(sprite), CollisionDirection.Right), assets.tile`transparency16`)) {
         if (sceneX % 2 == 0) {
             tiles.loadConnectedMap(ConnectionKind.EW1)
         } else {
             tiles.loadConnectedMap(ConnectionKind.EW0)
         }
-        sprite.x = 0
+        sprite.x = 8
     } else {
-        if (sprite.tileKindAt(TileDirection.Left, assets.tile`transparency16`)) {
+        if (controller.left.isPressed() && tiles.tileIs(tiles.locationInDirection(tiles.locationOfSprite(sprite), CollisionDirection.Left), assets.tile`transparency16`)) {
             if (sceneX % 2 == 0) {
                 tiles.loadConnectedMap(ConnectionKind.EW0)
             } else {
                 tiles.loadConnectedMap(ConnectionKind.EW1)
             }
-            sprite.x = 16 * tiles.tilemapColumns()
+            sprite.x = 16 * tiles.tilemapColumns() - 8
         }
     }
 })
@@ -164,21 +164,37 @@ controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
         . . . . . . . f f f . . . . . . 
         `)
 })
+function getScene (newSceneName: string) {
+    if (newSceneName == "scene01") {
+        return scene01
+    }
+    if (newSceneName == "scene02") {
+        return scene02
+    }
+    if (newSceneName == "scene03") {
+        return scene03
+    }
+    return scene01
+}
 tiles.onMapLoaded(function (tilemap2) {
     if (tilemap2 == scene01) {
+        sceneName = "scene01"
         sceneX = 0
         scene.setBackgroundColor(7)
         spawnSnake(100, 100)
         spawnSnake(150, 200)
     }
     if (tilemap2 == scene02) {
+        sceneName = "scene02"
         sceneX = 1
         scene.setBackgroundColor(7)
     }
     if (tilemap2 == scene03) {
+        sceneName = "scene03"
         sceneX = -1
         scene.setBackgroundColor(7)
     }
+    saveGame()
 })
 controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
     if (spellCombo.length > 0) {
@@ -203,30 +219,34 @@ controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
         . . . . f f . . . f f f . . . . 
         `)
 })
+tiles.onMapUnloaded(function (tilemap2) {
+    tiles.destroySpritesOfKind(SpriteKind.Snake)
+})
 function spawnSnake (x: number, y: number) {
     newSnake = sprites.create(img`
-        . . . . c c c c c c . . . . . . 
-        . . . c 6 7 7 7 7 6 c . . . . . 
-        . . c 7 7 7 7 7 7 7 7 c . . . . 
-        . c 6 7 7 7 7 7 7 7 7 6 c . . . 
-        . c 7 c 6 6 6 6 c 7 7 7 c . . . 
-        . f 7 6 f 6 6 f 6 7 7 7 f . . . 
-        . f 7 7 7 7 7 7 7 7 7 7 f . . . 
-        . . f 7 7 7 7 6 c 7 7 6 f c . . 
-        . . . f c c c c 7 7 6 f 7 7 c . 
-        . . c 7 2 7 7 7 6 c f 7 7 7 7 c 
-        . c 7 7 2 7 7 c f c 6 7 7 6 c c 
-        c 1 1 1 1 7 6 f c c 6 6 6 c . . 
-        f 1 1 1 1 1 6 6 c 6 6 6 6 f . . 
-        f 6 1 1 1 1 1 6 6 6 6 6 c f . . 
-        . f 6 1 1 1 1 1 1 6 6 6 f . . . 
-        . . c c c c c c c c c f . . . . 
+        . . . . . . c c c c c c . . . . 
+        . . . . . c 6 7 7 7 7 6 c . . . 
+        . . . . c 7 7 7 7 7 7 7 7 c . . 
+        . . . c 6 7 7 7 7 7 7 7 7 6 c . 
+        . . . c 7 7 7 c 6 6 6 6 c 7 c . 
+        . . . f 7 7 7 6 f 6 6 f 6 7 f . 
+        . . . f 7 7 7 7 7 7 7 7 7 7 f . 
+        . . c f 6 7 7 c 6 7 7 7 7 f . . 
+        . c 7 7 f 6 7 7 c c c c f . . . 
+        c 7 7 7 7 f c 6 7 7 7 2 7 c . . 
+        c c 6 7 7 6 c f c 7 7 2 7 7 c . 
+        . . c 6 6 6 c c f 6 7 1 1 1 1 c 
+        . . f 6 6 6 6 c 6 6 1 1 1 1 1 f 
+        . . f c 6 6 6 6 6 1 1 1 1 1 6 f 
+        . . . f 6 6 6 1 1 1 1 1 1 6 f . 
+        . . . . f c c c c c c c c c . . 
         `, SpriteKind.Snake)
     newSnake.setPosition(x, y)
     newSnake.setVelocity(50, 0)
+    sprites.setDataBoolean(newSnake, "spottedPlayer", false)
 }
 sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Snake, function (sprite, otherSprite) {
-    otherSprite.destroy(effects.disintegrate, 100)
+    otherSprite.destroy(effects.disintegrate, 20)
     sprite.destroy()
 })
 controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
@@ -252,6 +272,14 @@ controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
         . . . . . f f . . f f . . . . . 
         `)
 })
+function saveGame () {
+    blockSettings.writeNumber("drpg:life", info.life())
+    blockSettings.writeNumber("drpg:mana", manaBar.value)
+    blockSettings.writeString("drpg:scene", sceneName)
+    blockSettings.writeNumber("drpg:x", myPlayer.x)
+    blockSettings.writeNumber("drpg:y", myPlayer.y)
+    blockSettings.writeNumber("drpg:gameSaved", 1)
+}
 function castSpell (combo: string) {
     if (manaBar.value >= 20 && combo == "BAAA" && info.life() < maxHealth) {
         info.changeLifeBy(1)
@@ -266,11 +294,11 @@ manaBar.value += -3
     }
     return false
 }
-tiles.onMapUnloaded(function (tilemap2) {
-    tiles.destroySpritesOfKind(SpriteKind.Snake)
-})
+let dy = 0
+let dx = 0
 let snakes: Sprite[] = []
 let newSnake: Sprite = null
+let sceneName = ""
 let sceneX = 0
 let maxHealth = 0
 let manaBar: StatusBarSprite = null
@@ -279,13 +307,19 @@ let scene02: tiles.WorldMap = null
 let scene01: tiles.WorldMap = null
 let myPlayer : Sprite = null
 let spellCombo : string[] = []
+if (blockSettings.exists("drpg:gameSaved") && !(game.ask("Welcome to Daddy's RPG", "Continue?"))) {
+    blockSettings.clear()
+}
 manaBar = statusbars.create(30, 6, StatusBarKind.Magic)
 manaBar.setPosition(15, 15)
-manaBar.value = 20
 manaBar.max = 20
 manaBar.setColor(10, 15)
 maxHealth = 3
-info.setLife(maxHealth)
+scene01 = tiles.createMap(tilemap`level3`)
+scene02 = tiles.createMap(tilemap`level4`)
+scene03 = tiles.createMap(tilemap`level2`)
+tiles.connectMapById(scene01, scene02, ConnectionKind.EW1)
+tiles.connectMapById(scene01, scene03, ConnectionKind.EW0)
 myPlayer = sprites.create(img`
     . . . . . . f f f f . . . . . . 
     . . . . f f f 2 2 f f f . . . . 
@@ -306,20 +340,77 @@ myPlayer = sprites.create(img`
     `, SpriteKind.Player)
 controller.moveSprite(myPlayer, 100, 100)
 scene.cameraFollowSprite(myPlayer)
-scene01 = tiles.createMap(tilemap`level3`)
-scene02 = tiles.createMap(tilemap`level4`)
-scene03 = tiles.createMap(tilemap`level2`)
-tiles.connectMapById(scene01, scene02, ConnectionKind.EW1)
-tiles.connectMapById(scene01, scene03, ConnectionKind.EW0)
-tiles.loadMap(scene01)
+if (blockSettings.exists("drpg:gameSaved")) {
+    manaBar.value = blockSettings.readNumber("drpg:mana")
+    info.setLife(blockSettings.readNumber("drpg:life"))
+    tiles.loadMap(getScene(blockSettings.readString("drpg:scene")))
+    myPlayer.setPosition(blockSettings.readNumber("drpg:x"), blockSettings.readNumber("drpg:y"))
+} else {
+    manaBar.value = manaBar.max
+    info.setLife(maxHealth)
+    tiles.loadMap(scene01)
+}
 game.onUpdate(function () {
     let direction: number;
 snakes = sprites.allOfKind(SpriteKind.Snake)
     for (let aSnake of snakes) {
-        direction = aSnake.vx / Math.abs(aSnake.vx)
-        aSnake.setVelocity(aSnake.vx - direction, 0)
-        if (aSnake.vx == 0) {
-            aSnake.setVelocity((0 - direction) * 50, 0)
+        dx = myPlayer.x - aSnake.x
+        dy = myPlayer.y - aSnake.y
+        if (!(sprites.readDataBoolean(aSnake, "spottedPlayer"))) {
+            direction = aSnake.vx / Math.abs(aSnake.vx)
+            if (dx / Math.abs(dx) == direction && Math.abs(dy / dx) < 0.667 && dy ** 2 + dx ** 2 < 7000) {
+                sprites.setDataBoolean(aSnake, "spottedPlayer", true)
+                aSnake.follow(myPlayer, 40)
+                aSnake.setImage(img`
+                    . . . . . c c c c c c c . . . . 
+                    . . . . c 6 7 7 7 7 7 6 c . . . 
+                    . . . c 7 c 6 6 6 6 c 7 6 c . . 
+                    . . c 6 7 6 2 6 6 2 6 7 7 c . . 
+                    . . c 7 7 7 7 7 7 7 7 7 7 c . . 
+                    . . f 7 8 1 f f 1 6 7 7 7 f . . 
+                    . . f 6 f 1 f f 1 f 7 7 7 f . . 
+                    . . . f f 2 2 2 2 f 7 7 6 f . . 
+                    . . c c f 2 2 2 2 7 7 6 f c . . 
+                    . c 7 7 7 7 7 7 7 7 c c 7 7 c . 
+                    c 7 1 1 1 7 7 7 7 f c 6 7 7 7 c 
+                    f 1 1 1 1 1 7 6 f c c 6 6 6 c c 
+                    f 1 1 1 1 1 1 6 6 c 6 6 6 c . . 
+                    f 6 1 1 1 1 1 6 6 6 6 6 6 c . . 
+                    . f 6 1 1 1 1 1 6 6 6 6 c . . . 
+                    . . f f c c c c c c c c . . . . 
+                    `)
+                if (dx > 0) {
+                    aSnake.image.flipX()
+                }
+            } else {
+                aSnake.setVelocity(aSnake.vx - direction, 0)
+                if (aSnake.vx == 0) {
+                    aSnake.setVelocity((0 - direction) * 50, 0)
+                    aSnake.image.flipX()
+                }
+            }
+        } else {
+            aSnake.setImage(img`
+                . . . . . c c c c c c c . . . . 
+                . . . . c 6 7 7 7 7 7 6 c . . . 
+                . . . c 7 c 6 6 6 6 c 7 6 c . . 
+                . . c 6 7 6 2 6 6 2 6 7 7 c . . 
+                . . c 7 7 7 7 7 7 7 7 7 7 c . . 
+                . . f 7 8 1 f f 1 6 7 7 7 f . . 
+                . . f 6 f 1 f f 1 f 7 7 7 f . . 
+                . . . f f 2 2 2 2 f 7 7 6 f . . 
+                . . c c f 2 2 2 2 7 7 6 f c . . 
+                . c 7 7 7 7 7 7 7 7 c c 7 7 c . 
+                c 7 1 1 1 7 7 7 7 f c 6 7 7 7 c 
+                f 1 1 1 1 1 7 6 f c c 6 6 6 c c 
+                f 1 1 1 1 1 1 6 6 c 6 6 6 c . . 
+                f 6 1 1 1 1 1 6 6 6 6 6 6 c . . 
+                . f 6 1 1 1 1 1 6 6 6 6 c . . . 
+                . . f f c c c c c c c c . . . . 
+                `)
+            if (dx > 0) {
+                aSnake.image.flipX()
+            }
         }
     }
 })
